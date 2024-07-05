@@ -1,18 +1,190 @@
-// import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import {
+  Select,
+  MenuItem,
+  Typography,
+  Box,
+  Container,
+  Grid,
+  TextField,
+  FormControl,
+  InputLabel,
+  
+} from "@mui/material";
 
-// import LoginForm1 from './components/LoginForm1';
-import Register from './components/RegistrationForm';
+import CharacterCard from "./Components/CharacterCard";
+import Filter from "./Components/Filter";
+import SelectedFilters from "./Components/SelectedFilters";
 
 
 function App() {
+  const [characters, setCharacters] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [filterSpecies, setFilterSpecies] = useState([]);
+  const [filterGender, setFilterGender] = useState([]);
+  const [filterOrigin, setFilterOrigin] = useState([]);
+
+  useEffect(() => {
+    fetchCharacters();
+  }, []);
+
+  const fetchCharacters = async () => {
+    try {
+      const response = await fetch(
+        "https://rickandmortyapi.com/api/character/"
+      );
+      const data = await response.json();
+      setCharacters(data.results);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const handleSortChange = () => {
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
+    setSortOrder(newOrder);
+    const sortedCharacters = [...characters].sort((a, b) => {
+      if (newOrder === "asc") {
+        return a.id - b.id;
+      } else {
+        return b.id - a.id;
+      }
+    });
+    setCharacters(sortedCharacters);
+  };
+
+  const handleFilterChange = (filterType, values) => {
+    switch (filterType) {
+      case "species":
+        setFilterSpecies(values);
+        break;
+      case "gender":
+        setFilterGender(values);
+        break;
+      case "origin":
+        setFilterOrigin(values);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const clearFilter = (filterType) => {
+    switch (filterType) {
+      case "species":
+        setFilterSpecies([]);
+        break;
+      case "gender":
+        setFilterGender([]);
+        break;
+      case "origin":
+        setFilterOrigin([]);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const filteredCharacters = characters.filter(
+    (character) =>
+      character.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (filterSpecies.length === 0 ||
+        filterSpecies.includes(character.species)) &&
+      (filterGender.length === 0 || filterGender.includes(character.gender)) &&
+      (filterOrigin.length === 0 ||
+        filterOrigin.includes(character.origin.name))
+  );
+
   return (
-    <div className="App">
-    
-       {/* <LoginForm1></LoginForm1> */}
-       <Register></Register>
-  
-    </div>
+    <Container sx={{ py: 1 }}>
+      <Typography
+        variant="h3"
+        sx={{
+          mb: 3,
+          color: "black",
+          textAlign: "center",
+        }}
+      >
+        Rick and Morty Show
+      </Typography>
+
+      <SelectedFilters
+        filters={{
+          species: filterSpecies,
+          gender: filterGender,
+          origin: filterOrigin,
+        }}
+        onRemoveFilter={handleFilterChange}
+      />
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={4}>
+          <Box sx={{ width: "100%", mb: 2 }}>
+            <Filter
+              title="Filter by Species"
+              options={["Human", "Alien", "Humanoid"]}
+              selectedFilters={filterSpecies}
+              onFilterChange={(values) => handleFilterChange("species", values)}
+              onClearFilter={() => clearFilter("species")}
+            />
+            <Filter
+              title="Filter by Gender"
+              options={["Male", "Female", "Genderless"]}
+              selectedFilters={filterGender}
+              onFilterChange={(values) => handleFilterChange("gender", values)}
+              onClearFilter={() => clearFilter("gender")}
+            />
+            <Filter
+              title="Filter by Origin"
+              options={[
+                "Earth (C-137)",
+                "Earth (Replacement Dimension)",
+                "Unknown",
+              ]}
+              selectedFilters={filterOrigin}
+              onFilterChange={(values) => handleFilterChange("origin", values)}
+              onClearFilter={() => clearFilter("origin")}
+            />
+          </Box>
+        </Grid>
+
+        <Grid className="w" item xs={12} sm={8}>
+          <div className="M"> 
+          <TextField
+            label="Search by Name"
+            variant="outlined"
+            fullWidth
+            value={searchTerm}
+            onChange={handleSearchChange}
+            sx={{ mb: 2,width: "30%" }}
+          />
+          <FormControl className="w" fullWidth variant="outlined" sx={{ mb: 3,width: "30%" ,marginLeft:"290px" }}>
+            <InputLabel>Sort Order</InputLabel>
+            <Select
+              value={sortOrder}
+              onChange={handleSortChange}
+              label="Sort Order"
+            >
+              <MenuItem value="asc">Ascending</MenuItem>
+              <MenuItem value="desc">Descending</MenuItem>
+            </Select>
+          </FormControl>
+          </div>
+          <Grid container spacing={3} justifyContent="center">
+            {filteredCharacters.map((character) => (
+              <Grid key={character.id} item xs={12} sm={6} md={4} lg={3}>
+                <CharacterCard character={character} />
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
+      </Grid>
+    </Container>
   );
 }
 
